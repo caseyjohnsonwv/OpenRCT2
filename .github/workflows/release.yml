@@ -1,4 +1,4 @@
-name: CI
+name: Release
 on:
   push:
     tags:
@@ -299,7 +299,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    needs: [windows, windows-mingw, macos, linux-portable, linux-portable-32, linux-appimage, linux-docker, linux-clang, android]
+    needs: [windows, macos, linux-portable, linux-portable-32, linux-appimage, android]
     if: needs.*.result == 'success'
     steps:
       - name: Checkout code
@@ -316,15 +316,15 @@ jobs:
           do
             unzip "ci_artifacts/$ARTIFACT" -d release_assets
           done
-#      - name: Create release
-#        id: create_release
-#        uses: actions/create-release@v1
-#        with:
-#          tag-name: ${{ github.ref }}
-#          release-name: Release ${{ github.ref }}
-#          body_path: distribution/changelog.txt
-#          draft: true
-#          prerelease: false
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        with:
+          tag-name: ${{ github.ref }}
+          release-name: Release ${{ github.ref }}
+          body_path: distribution/changelog.txt
+          draft: true
+          prerelease: false
 #      - name: Upload release assets
 #        uses: actions/upload-release-asset@v1
 #        with:
