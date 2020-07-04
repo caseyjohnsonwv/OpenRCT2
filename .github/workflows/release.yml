@@ -80,7 +80,6 @@ jobs:
         id: prepare_assets
         shell: bash
         run: |
-          . script/setenv -q
           unzip ~/ci_artifacts/* -d ~/release_assets
       - name: Create release
         id: create_release
