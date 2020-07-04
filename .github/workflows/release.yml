@@ -75,15 +75,13 @@ jobs:
       - name: Download CI artifacts
         uses: actions/download-artifact@v2
         with:
-          path: ci_artifacts
+          path: ~/ci_artifacts
       - name: Prepare assets for release
+        id: prepare_assets
         shell: bash
         run: |
-          mkdir release_assets
-          for ARTIFACT in ci_artifacts/*
-          do
-            unzip "$ARTIFACT" -d release_assets
-          done
+          . script/setenv -q
+          unzip ~/ci_artifacts/* -d ~/release_assets
       - name: Create release
         id: create_release
         uses: actions/create-release@v1
@@ -93,11 +91,10 @@ jobs:
           body_path: distribution/changelog.txt
           draft: true
           prerelease: false
-      - name: Upload release assets
-        shell: bash
-        run: |
-          for ASSET in release_assets/*
-          do
-            ASSET=$(echo "$ASSET" | sed 's:release_assets/::')
-            curl -X POST "${{ steps.create_release.outputs.upload_url }}" --data-urlencode "name=${ASSET}"
-          done
+      - name: Upload release asset (macOS)
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ~/release_assets/openrct2-macos.zip
+          asset_name: openrct2-macos.zip
+          asset_content_type: application/zip
