@@ -292,18 +292,26 @@ jobs:
               echo 'Not going to push build'
           fi
   release:
-    name: Release
+    name: Dispatch release
     runs-on: ubuntu-latest
     needs: [windows, macos, linux-portable, linux-portable-32, linux-appimage, android]
     if: success()
     steps:
-      - name: Dispatch release workflow
+      - name: Check commit tag
+        id: check-commit-tag
         shell: bash
         run: |
-          if [[ ${ github.ref#refs/tags/ } == 'v'* ]]; then
-            curl -X POST -H 'Accept: application/vnd.github.v3+json' \
-            'https://api.github.com/repos/OpenRCT2/OpenRCT2/dispatches' \
-            -d '{"event_type": "ci-release"}'
-          else
-            echo "No version tag detected- release dispatch aborted."
-          fi
+        TAG_NAME=${github.ref#refs/tags/}
+        if [[ -z $TAG_NAME ]]; then
+          echo "No tag detected. Release aborted."
+          exit 1
+        else
+          echo "::set-output name=tag_name::$TAG_NAME"
+        fi
+      - name: Dispatch release workflow
+        uses: peter-evans/repository_dispatch@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: OpenRCT2/OpenRCT2
+          event-type: ci-release
+          client-payload: '{"tag_name": "${{ steps.check-commit-tag.outputs.tag_name }}"}'
