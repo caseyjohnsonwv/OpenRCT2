@@ -301,13 +301,13 @@ jobs:
         id: check-commit-tag
         shell: bash
         run: |
-        TAG_NAME=${github.ref#refs/tags/}
-        if [[ -z $TAG_NAME ]]; then
-          echo "No tag detected. Release aborted."
-          exit 1
-        else
-          echo "::set-output name=tag_name::$TAG_NAME"
-        fi
+          TAG_NAME=${github.ref#refs/tags/}
+          if [[ "$TAG_NAME" == "" ]]; then
+            echo "No tag detected. Release aborted."
+            exit 1
+          else
+            echo "::set-output name=tag_name::$TAG_NAME"
+          fi
       - name: Dispatch release workflow
         uses: peter-evans/repository_dispatch@v1
         with:
