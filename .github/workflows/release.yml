@@ -1,0 +1,55 @@
+name: Release
+on:
+  repository_dispatch:
+    types: [ci-release]
+env:
+  OPENRCT2_BUILD_SERVER: GitHub
+  OPENRCT2_VERSION: 0.2.6
+jobs:
+  release:
+    name: Create release draft
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Download CI artifacts
+        shell: bash
+        run: |
+          ARTIFACTS_RESP=$(curl -v -x GET "https://api.github.com/repos/OpenRCT2/OpenRCT2/actions/runs/${{ github.event.client_payload.ci_run_id }}/artifacts")
+          ARTIFACT_URLS=$(echo $ARTIFACTS_RESP \
+            | grep '"archive_download_url":' \
+            | sed -E 's/ +"archive_download_url":."(.+)",/\1/' \
+          )
+          ARTIFACT_NAMES=$(echo $ARTIFACTS_RESP \
+            | grep '"name":' \
+            | sed -E 's/ +"name":."(.+)",/\1/' \
+          )
+          mkdir artifacts
+          for index in ${!ARTIFACT_URLS[*]}; do
+            curl -v -X GET "${ARTIFACT_URLS[$index]}" -o "artifacts/${ARTIFACT_NAMES[$index]}"
+          done
+      - name: Prepare release assets
+        shell: bash
+        run: |
+          mkdir release_assets
+          for ARTIFACT in artifacts/*; do
+            unzip "$ARTIFACT" -d release_assets/"${ARTIFACT##*/}"
+          done
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Create release draft
+        id: create-release
+        uses: actions/create-release@v1
+        with:
+          tag_name: ${{ github.event.client_payload.tag_name }}
+          release_name: Release ${{ github.event.client_payload.tag_name }}
+          body_path: distribution/changelog.txt
+          draft: true
+          prerelease: false
+      - name: Upload release assets
+        shell: bash
+        run: |
+          . scripts/setenv -q
+          for ASSET in release_assets/*; do
+            curl -v -X POST "${{ steps.create-release.outputs.upload_url }}?name=${ASSET##*/}"
+          done
