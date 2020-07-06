@@ -314,4 +314,4 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           repository: OpenRCT2/OpenRCT2
           event-type: ci-release
-          client-payload: '{"tag_name": "${{ steps.check-commit-tag.outputs.tag_name }}"}'
+          client-payload: '{"tag_name": "${{ steps.check-commit-tag.outputs.tag_name }}", "ci_run_id": "${{ github.run_id }}"}'
